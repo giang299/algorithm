@@ -1,0 +1,234 @@
+struct Heap<T> {
+    data: Vec<T>,
+    comparator: fn(&T, &T) -> std::cmp::Ordering,
+}
+impl<T: Ord> Heap<T> {
+    fn (comparator: fn(&T, &T) -> std::cmp::Ordering) -> Self {
+        Heap { data: Vec::new(), comparator
+    }
+    fn new() -> Self {
+        Heap { data: Vec::new() }
+    }
+
+    fn push(&mut self, value: T) {
+        self.data.push(value);
+        self.bubble_up(self.data.len() - 1);
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        if self.data.is_empty() {
+            return None;
+        }
+        let last_index = self.data.len() - 1;
+        self.data.swap(0, last_index);
+        let popped_value = self.data.pop();
+        self.bubble_down(0);
+        popped_value
+    }
+
+    fn peek(&self) -> Option<&T> {
+        self.data.get(0)
+    }
+
+    fn bubble_up(&mut self, index: usize) {
+        let mut idx = index;
+        while idx > 0 {
+            let parent_idx = (idx - 1) / 2;
+            if self.data[idx] > self.data[parent_idx] {
+                self.data.swap(idx, parent_idx);
+                idx = parent_idx;
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn bubble_down(&mut self, index: usize) {
+        let mut idx = index;
+        let len = self.data.len();
+        loop {
+            let left_child_idx = 2 * idx + 1;
+            let right_child_idx = 2 * idx + 2;
+            let mut largest_idx = idx;
+
+            if left_child_idx < len && self.data[left_child_idx] > self.data[largest_idx] {
+                largest_idx = left_child_idx;
+            }
+            if right_child_idx < len && self.data[right_child_idx] > self.data[largest_idx] {
+                largest_idx = right_child_idx;
+            }
+            if largest_idx != idx {
+                self.data.swap(idx, largest_idx);
+                idx = largest_idx;
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+#[cfg(test)]
+mod heap_tests {
+    #[test]
+    fn is_empty_test() {
+        let mut heap = super::Heap::new();
+        assert!(heap.is_empty());
+        heap.push(1);
+        assert!(!heap.is_empty());
+        heap.pop();
+        assert!(heap.is_empty());        
+    }
+    #[test]
+    fn push_pop_test() {
+        let mut heap = super::Heap::new();
+        heap.push(3);
+        heap.push(1);
+        heap.push(4);
+        heap.push(1);
+        heap.push(5);
+        assert_eq!(heap.pop(), Some(5));
+        assert_eq!(heap.pop(), Some(4));
+        assert_eq!(heap.pop(), Some(3));
+        assert_eq!(heap.pop(), Some(1));
+        assert_eq!(heap.pop(), Some(1));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn peek_test() {
+        let mut heap = super::Heap::new();
+        assert_eq!(heap.peek(), None);
+        heap.push(2);
+        assert_eq!(heap.peek(), Some(&2));
+        heap.push(3);
+        assert_eq!(heap.peek(), Some(&3));
+        heap.push(1);
+        assert_eq!(heap.peek(), Some(&3));
+        heap.pop();
+        assert_eq!(heap.peek(), Some(&2));
+    }
+    #[test]
+    fn len_test() {
+        let mut heap = super::Heap::new();
+        assert_eq!(heap.len(), 0);
+        heap.push(1);
+        assert_eq!(heap.len(), 1);
+        heap.push(2);
+        assert_eq!(heap.len(), 2);
+        heap.pop();
+        assert_eq!(heap.len(), 1);
+        heap.pop();
+        assert_eq!(heap.len(), 0);
+    }
+    #[test]
+    fn complex_test() {
+        let mut heap = super::Heap::new();
+        let values = vec![10, 20, 5, 30, 15];
+        for &value in &values {
+            heap.push(value);
+        }
+        let mut sorted_values = Vec::new();
+        while !heap.is_empty() {
+            if let Some(value) = heap.pop() {
+                sorted_values.push(value);
+            }
+        }
+        assert_eq!(sorted_values, vec![30, 20, 15, 10, 5]);
+    }
+    #[test]
+    fn string_test() {
+        let mut heap = super::Heap::new();
+        heap.push("apple");
+        heap.push("banana");
+        heap.push("cherry");
+        assert_eq!(heap.pop(), Some("cherry"));
+        assert_eq!(heap.pop(), Some("banana"));
+        assert_eq!(heap.pop(), Some("apple"));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn custom_struct_test() {
+        #[derive(Eq, PartialEq, Ord, PartialOrd, Debug)]
+        struct Point {
+            x: i32,
+            y: i32,
+        }
+        let mut heap = super::Heap::new();
+        heap.push(Point { x: 1, y: 2 });
+        heap.push(Point { x: 3, y: 4 });
+        heap.push(Point { x: 0, y: 0 });
+        assert_eq!(heap.pop(), Some(Point { x: 3, y: 4 }));
+        assert_eq!(heap.pop(), Some(Point { x: 1, y: 2 }));
+        assert_eq!(heap.pop(), Some(Point { x: 0, y: 0 }));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn large_number_test() {
+        let mut heap = super::Heap::new();
+        for i in 0..1000 {
+            heap.push(i);
+        }
+        for i in (0..1000).rev() {
+            assert_eq!(heap.pop(), Some(i));
+        }
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn duplicate_values_test() {
+        let mut heap = super::Heap::new();
+        heap.push(5);
+        heap.push(5);
+        heap.push(5);
+        assert_eq!(heap.pop(), Some(5));
+        assert_eq!(heap.pop(), Some(5));
+        assert_eq!(heap.pop(), Some(5));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn mixed_operations_test() {
+        let mut heap = super::Heap::new();
+        heap.push(10);
+        heap.push(20);
+        assert_eq!(heap.pop(), Some(20));
+        heap.push(15);
+        assert_eq!(heap.peek(), Some(&15));
+        heap.push(30);
+        assert_eq!(heap.pop(), Some(30));
+        assert_eq!(heap.pop(), Some(15));
+        assert_eq!(heap.pop(), Some(10));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn empty_pop_test() {
+        let mut heap = super::Heap::new();
+        assert_eq!(heap.pop(), None);
+        heap.push(1);
+        assert_eq!(heap.pop(), Some(1));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn single_element_test() {
+        let mut heap = super::Heap::new();
+        heap.push(42);
+        assert_eq!(heap.peek(), Some(&42));
+        assert_eq!(heap.pop(), Some(42));
+        assert_eq!(heap.pop(), None);
+    }
+    #[test]
+    fn negative_numbers_test() {
+        let mut heap = super::Heap::new();
+        heap.push(-10);
+        heap.push(-20);
+        heap.push(-5);
+        assert_eq!(heap.pop(), Some(-5));
+        assert_eq!(heap.pop(), Some(-10));
+        assert_eq!(heap.pop(), Some(-20));
+        assert_eq!(heap.pop(), None);
+    }
+}

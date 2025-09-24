@@ -1,1 +1,1 @@
-pub mod data_stucture;
+pub mod data_structure;
